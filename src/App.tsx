@@ -10,12 +10,13 @@ import {
   fetchPredictions,
   saveChampionBet,
   savePrediction,
+  verifyOrClaim,
 } from './lib/api.ts';
 import { useIdentity } from './lib/identity.ts';
 import type { ChampionBet, Match, Player, Prediction } from './lib/types.ts';
 
 export default function App() {
-  const { playerId, setPlayerId, clear } = useIdentity();
+  const { identity, signIn, clear } = useIdentity();
   const [players, setPlayers] = useState<Player[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -48,18 +49,27 @@ export default function App() {
     void load();
   }, [load]);
 
+  const authenticate = useCallback(
+    async (playerId: number, pin: string) => {
+      const ok = await verifyOrClaim(playerId, pin);
+      if (!ok) throw new Error('Неверный PIN-код');
+      signIn(playerId, pin);
+    },
+    [signIn],
+  );
+
   const handleSavePrediction = useCallback(
     async (matchId: string, predHome: number, predAway: number) => {
-      if (playerId === null) return;
-      await savePrediction(playerId, matchId, predHome, predAway);
+      if (!identity) return;
+      await savePrediction(identity.playerId, identity.pin, matchId, predHome, predAway);
       setPredictions((prev) => {
         const rest = prev.filter(
-          (p) => !(p.player_id === playerId && p.match_id === matchId),
+          (p) => !(p.player_id === identity.playerId && p.match_id === matchId),
         );
         return [
           ...rest,
           {
-            player_id: playerId,
+            player_id: identity.playerId,
             match_id: matchId,
             pred_home: predHome,
             pred_away: predAway,
@@ -68,19 +78,19 @@ export default function App() {
         ];
       });
     },
-    [playerId],
+    [identity],
   );
 
   const handleSaveChampion = useCallback(
     async (team: string) => {
-      if (playerId === null) return;
-      await saveChampionBet(playerId, team);
+      if (!identity) return;
+      await saveChampionBet(identity.playerId, identity.pin, team);
       setChampionBets((prev) => {
-        const rest = prev.filter((b) => b.player_id !== playerId);
-        return [...rest, { player_id: playerId, team, updated_at: new Date().toISOString() }];
+        const rest = prev.filter((b) => b.player_id !== identity.playerId);
+        return [...rest, { player_id: identity.playerId, team, updated_at: new Date().toISOString() }];
       });
     },
-    [playerId],
+    [identity],
   );
 
   if (loading) {
@@ -111,9 +121,9 @@ export default function App() {
     );
   }
 
-  const me = players.find((p) => p.id === playerId);
+  const me = players.find((p) => p.id === identity?.playerId);
   if (!me) {
-    return <PlayerPicker players={players} onPick={setPlayerId} />;
+    return <PlayerPicker players={players} authenticate={authenticate} />;
   }
   const opponent = players.find((p) => p.id !== me.id);
 

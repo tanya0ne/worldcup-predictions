@@ -43,6 +43,7 @@ export function ChampionPicker({ me, opponent, matches, championBets, onSave }: 
 
   const [team, setTeam] = useState(myBet?.team ?? '');
   const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     setTeam(myBet?.team ?? '');
@@ -51,8 +52,11 @@ export function ChampionPicker({ me, opponent, matches, championBets, onSave }: 
   async function save() {
     if (!team) return;
     setSaving(true);
+    setErr(null);
     try {
       await onSave(team);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Не удалось сохранить');
     } finally {
       setSaving(false);
     }
@@ -106,6 +110,8 @@ export function ChampionPicker({ me, opponent, matches, championBets, onSave }: 
             </button>
           </div>
         )}
+
+        {err && <p className="mt-2 text-sm font-medium text-red-600">{err}</p>}
 
         <div className="mt-3 grid grid-cols-2 gap-2">
           <ChampionRow name={me.name} team={myBet?.team} highlight />

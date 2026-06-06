@@ -1,24 +1,38 @@
-// "Who am I" — honor-system identity stored in localStorage, no login (DECISIONS.md D2).
+// "Who am I" + PIN, stored in localStorage. The PIN gates writes server-side
+// (Supabase RPC) so a player can't edit the other's bets.
 import { useCallback, useState } from 'react';
 
-const KEY = 'worldcup:playerId';
+const KEY = 'worldcup:identity';
 
-function read(): number | null {
-  const raw = localStorage.getItem(KEY);
-  if (raw === null) return null;
-  const id = Number(raw);
-  return Number.isInteger(id) ? id : null;
+export interface Identity {
+  playerId: number;
+  pin: string;
+}
+
+function read(): Identity | null {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return null;
+    const o = JSON.parse(raw) as Partial<Identity>;
+    if (typeof o.playerId === 'number' && typeof o.pin === 'string') {
+      return { playerId: o.playerId, pin: o.pin };
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export function useIdentity(): {
-  playerId: number | null;
-  setPlayerId: (id: number) => void;
+  identity: Identity | null;
+  signIn: (playerId: number, pin: string) => void;
   clear: () => void;
 } {
-  const [playerId, setState] = useState<number | null>(read);
+  const [identity, setState] = useState<Identity | null>(read);
 
-  const setPlayerId = useCallback((id: number) => {
-    localStorage.setItem(KEY, String(id));
+  const signIn = useCallback((playerId: number, pin: string) => {
+    const id = { playerId, pin };
+    localStorage.setItem(KEY, JSON.stringify(id));
     setState(id);
   }, []);
 
@@ -27,5 +41,5 @@ export function useIdentity(): {
     setState(null);
   }, []);
 
-  return { playerId, setPlayerId, clear };
+  return { identity, signIn, clear };
 }

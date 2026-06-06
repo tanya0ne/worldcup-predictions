@@ -58,6 +58,7 @@ export function MatchCard({
   const [away, setAway] = useState(myPrediction?.pred_away ?? 0);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     setHome(myPrediction?.pred_home ?? 0);
@@ -70,9 +71,12 @@ export function MatchCard({
   async function save() {
     setSaving(true);
     setSavedAt(false);
+    setErr(null);
     try {
       await onSave(match.id, home, away);
       setSavedAt(true);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Не удалось сохранить');
     } finally {
       setSaving(false);
     }
@@ -127,6 +131,8 @@ export function MatchCard({
           Матч начался — приём прогнозов закрыт
         </p>
       )}
+
+      {err && <p className="mt-2 text-center text-xs font-medium text-red-600">{err}</p>}
 
       <div className="mt-3 grid grid-cols-2 gap-2">
         <PredictionRow name={me.name} pred={myPrediction} points={myPoints} highlight />
