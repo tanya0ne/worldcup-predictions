@@ -1,0 +1,13 @@
+import { createClient } from '@supabase/supabase-js';
+
+const url = import.meta.env.VITE_SUPABASE_URL;
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!url || !anonKey) {
+  throw new Error(
+    'Не заданы переменные окружения VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY. ' +
+      'Скопируйте web/.env.example в web/.env и впишите значения из настроек проекта Supabase.',
+  );
+}
+
+export const supabase = createClient(url, anonKey);
