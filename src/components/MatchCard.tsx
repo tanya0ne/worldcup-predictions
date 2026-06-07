@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { scoreMatch } from '../lib/scoring.ts';
+import { isMatchDayReached } from '../lib/time.ts';
 import type { Match, Player, Prediction } from '../lib/types.ts';
 import { ScoreStepper } from './ScoreStepper.tsx';
 
@@ -16,12 +17,11 @@ function isFinished(match: Match): boolean {
   return match.status === 'finished' && match.home_score !== null && match.away_score !== null;
 }
 
-// Predictions lock once the match kicks off (or is finished) — you can't predict
-// a game that has already started.
+// Predictions lock from the START of the match day (not at kickoff) — no editing
+// on the day the match is played. Mirrors the Supabase save_prediction check.
 function isLocked(match: Match): boolean {
   if (isFinished(match)) return true;
-  if (match.kickoff_at && new Date(match.kickoff_at).getTime() <= Date.now()) return true;
-  return false;
+  return isMatchDayReached(match.kickoff_at);
 }
 
 function pointsFor(match: Match, pred: Prediction | undefined): number | null {
@@ -128,7 +128,7 @@ export function MatchCard({
 
       {locked && !finished && (
         <p className="mt-2 text-center text-xs text-slate-400">
-          Матч начался — приём прогнозов закрыт
+          В день матча менять прогноз уже нельзя
         </p>
       )}
 

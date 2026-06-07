@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { isTournamentDayReached } from '../lib/time.ts';
 import type { ChampionBet, Match, Player } from '../lib/types.ts';
 
 interface Props {
@@ -22,19 +23,11 @@ function teamOptions(matches: Match[]): string[] {
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 
-// Champion pick locks once the tournament starts (the earliest match kicks off).
-// Picking is only allowed before the first match — otherwise you could just
-// switch to whoever is winning, which defeats the bet.
-function hasTournamentStarted(matches: Match[]): boolean {
-  const kickoffs = matches.map((m) => m.kickoff_at).filter(Boolean) as string[];
-  if (kickoffs.length === 0) return false;
-  const earliest = kickoffs.reduce((a, b) => (a < b ? a : b));
-  return new Date(earliest).getTime() <= Date.now();
-}
-
 export function ChampionPicker({ me, opponent, matches, championBets, onSave }: Props) {
   const teams = useMemo(() => teamOptions(matches), [matches]);
-  const locked = hasTournamentStarted(matches);
+  // Champion locks from the start of the tournament's first match day — picking
+  // is only allowed before then (otherwise you'd switch to whoever is winning).
+  const locked = useMemo(() => isTournamentDayReached(matches.map((m) => m.kickoff_at)), [matches]);
 
   const myBet = championBets.find((b) => b.player_id === me.id);
   const oppBet = opponent
