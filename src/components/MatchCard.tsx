@@ -65,8 +65,11 @@ export function MatchCard({
     setAway(myPrediction?.pred_away ?? 0);
   }, [myPrediction?.pred_home, myPrediction?.pred_away]);
 
-  const dirty =
-    home !== (myPrediction?.pred_home ?? 0) || away !== (myPrediction?.pred_away ?? 0);
+  // If there's no saved prediction yet, allow saving even the default 0:0.
+  // Once saved, the button only re-enables when the score actually changes.
+  const dirty = myPrediction
+    ? home !== myPrediction.pred_home || away !== myPrediction.pred_away
+    : true;
 
   async function save() {
     setSaving(true);
