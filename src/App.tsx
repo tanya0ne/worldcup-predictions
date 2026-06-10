@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { ChampionPicker } from './components/ChampionPicker.tsx';
 import { MatchList } from './components/MatchList.tsx';
 import { PlayerPicker } from './components/PlayerPicker.tsx';
+import { PointsBreakdown } from './components/PointsBreakdown.tsx';
+import { ScoringRules } from './components/ScoringRules.tsx';
 import { Standings } from './components/Standings.tsx';
 import {
   fetchChampionBets,
@@ -23,6 +25,7 @@ export default function App() {
   const [championBets, setChampionBets] = useState<ChampionBet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<'matches' | 'points' | 'rules'>('matches');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -154,20 +157,57 @@ export default function App() {
           predictions={predictions}
           championBets={championBets}
         />
-        <ChampionPicker
-          me={me}
-          opponent={opponent}
-          matches={matches}
-          championBets={championBets}
-          onSave={handleSaveChampion}
-        />
-        <MatchList
-          matches={matches}
-          me={me}
-          opponent={opponent}
-          predictions={predictions}
-          onSave={handleSavePrediction}
-        />
+
+        <nav className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-200/70 p-1">
+          {(
+            [
+              ['matches', 'Матчи'],
+              ['points', 'Детали очков'],
+              ['rules', 'Правила'],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setView(key)}
+              className={`cursor-pointer rounded-xl px-2 py-2 text-sm font-semibold transition-colors ${
+                view === key ? 'bg-white text-red-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        {view === 'matches' && (
+          <>
+            <ChampionPicker
+              me={me}
+              opponent={opponent}
+              matches={matches}
+              championBets={championBets}
+              onSave={handleSaveChampion}
+            />
+            <MatchList
+              matches={matches}
+              me={me}
+              opponent={opponent}
+              predictions={predictions}
+              onSave={handleSavePrediction}
+            />
+          </>
+        )}
+
+        {view === 'points' && (
+          <PointsBreakdown
+            players={players}
+            matches={matches}
+            predictions={predictions}
+            championBets={championBets}
+          />
+        )}
+
+        {view === 'rules' && <ScoringRules />}
       </main>
     </div>
   );
